@@ -1,0 +1,55 @@
+// 1. Conexión al cluster y habilitación de sharding
+use admin;
+
+// Habilitar el sharding en la base de datos
+sh.enableSharding("Torneo");
+
+// 2. Crear colecciones y shardearlas
+// Shardear la colección 'jugador' basada en el campo 'region'
+sh.shardCollection("Torneo.jugador", { region: 1 });
+
+// Shardear la colección 'resultados' basada en 'evento_id'
+sh.shardCollection("Torneo.resultado", { evento_id: 1 });
+
+// 3. Inserción de datos de prueba en casos de fallo
+use Torneo;
+
+// Insertar datos en la colección 'jugador'
+db.jugador.insertMany([
+  { jugador_id: 1, nombre: "Ramon Cendoya", region: "Europa" },
+  { jugador_id: 2, nombre: "Frank Martínez", region: "America" },
+  { jugador_id: 3, nombre: "María Sánchez", region: "Este" },
+  { jugaor_id: 4, nombre: "Juan Torres", region: "Oeste" }
+]);
+
+// Insertar datos en la colección 'resultado'
+db.resultado.insertMany([
+  { resultado_id: 1, partido_id: 101, goles: 2, jugador_id: 1 },
+  { resultado_id: 2, partido_id: 102, goles: 2, jugador_id: 2 },
+  { resultado_id: 3, partido_id: 101, goles: 3, jugador_id: 3 },
+  { resultado_id: 4, partido_id: 103, goles: 1, jugador_id: 4 }
+]);
+
+// 4. Consultas para verificar nuevo particionamiento 
+// Verificar los datos insertados para poner a prueba la escalibilidad
+print("Datos en la colección 'jugador':");
+db.jugador.find().pretty();
+
+print("Datos en la colección 'resultado':");
+db.resultados.find().pretty();
+
+// Comprobar distribución de shards
+print("Distribución de shards en 'jugador':");
+sh.status({ verbose: 1 });
+
+// Consulta filtrada por 'region'
+print("Consulta por región 'Este':");
+db.jugador.find({ region: "Oeste" }).pretty();
+
+// Consulta por 'evento_id'
+print("Consulta por evento_id 101:");
+db.resultado.find({ evento_id: 101 }).pretty();
+
+
+
+
